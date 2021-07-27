@@ -25,6 +25,8 @@
     <Folder Include="Areas\" />
     <Folder Include="Areas\Identity\" />
     <Folder Include="Areas\Identity\Pages\" />
+    <Folder Include="Pages\Identity\" />
+    <Folder Include="Pages\Identity\Admin\" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="5.0.8">
@@ -35,5 +37,9 @@
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="5.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="5.0.6" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Remove="Pages\Identity\" />
+    <None Remove="Pages\Identity\Admin\" />
   </ItemGroup>
 </Project>
