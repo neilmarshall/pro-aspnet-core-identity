@@ -1,0 +1,28 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Identity App</title>
+    <link rel="stylesheet" href="/Identity/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="/Identity/css/site.css" />
+    <script src="/Identity/lib/jquery/dist/jquery.js"></script>
+    <script src="/Identity/lib/bootstrap/dist/js/bootstrap.bundle.js"></script>
+    <script src="/Identity/js/site.js"></script>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-secondary">
+        <div>
+            <a class="navbar-brand text-white" asp-controller="Home">IdentityApp</a>
+            <a class="navbar-brand text-white" asp-controller="Pages">IdentityApp (Pages)</a>
+        </div>
+        <div class="text-white">
+            <partial name="_LoginPartial" />
+        </div>
+    </nav>
+    <div class="m-2">
+        @RenderBody()
+        @await RenderSectionAsync("Scripts", required: false) 
+    </div>
+</body>
+</html>

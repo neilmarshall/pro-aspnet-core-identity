@@ -1,0 +1,30 @@
+﻿@page
+@inject UserManager<IdentityUser<int>> UserManager
+@{
+    ViewData["ActivePage"] = ManageNavPages.StoreData;
+    IdentityUser<int> user = await UserManager.GetUserAsync(User);
+}
+
+<h4>Store Data</h4>
+
+<table class="table table-sm table-bordered table-striped">
+    <thead>
+        <tr><th>Property</th><th>Value</th></tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Id</td>
+            <td>@user.Id</td>
+        </tr>
+        @foreach (var prop in typeof(IdentityUser<int>).GetProperties())
+        {
+            if (prop.Name != "Id")
+            {
+                <tr>
+                    <td>@prop.Name</td>
+                    <td class="text-truncate" style="max-width: 250px">@prop.GetValue(user)</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
