@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
@@ -7,13 +8,46 @@ using Npgsql;
 
 namespace IdentityApp.User.Repository
 {
-    public class IdentityUserRepository : IUserStore<IdentityUser<int>>, IUserEmailStore<IdentityUser<int>>, IUserPasswordStore<IdentityUser<int>>, IUserPhoneNumberStore<IdentityUser<int>>
+    public class IdentityUserRepository : IUserStore<IdentityUser<int>>, IUserEmailStore<IdentityUser<int>>, IUserPasswordStore<IdentityUser<int>>, IUserPhoneNumberStore<IdentityUser<int>>, IQueryableUserStore<IdentityUser<int>>
     {
         private readonly string _connectionString;
 
         public IdentityUserRepository(string connectionString)
         {
             _connectionString = connectionString;
+        }
+
+        public IQueryable<IdentityUser<int>> Users
+        {
+            get
+            {
+                try
+                {
+                    using var conn = new NpgsqlConnection(_connectionString);
+
+                    var users = conn.Query<IdentityUser<int>>(
+                        @"
+                        SELECT
+                            id,
+                            username,
+                            normalizedusername,
+                            email,
+                            normalizedemail,
+                            emailconfirmed,
+                            passwordhash,
+                            securitystamp,
+                            concurrencystamp,
+                            accessfailedcount
+                        FROM identity.users;
+                    ");
+
+                    return users.AsQueryable();
+                }
+                catch (Exception)
+                {
+                    return Enumerable.Empty<IdentityUser<int>>().AsQueryable();
+                }
+            }
         }
 
         public async Task<IdentityResult> CreateAsync(IdentityUser<int> user, CancellationToken cancellationToken)
