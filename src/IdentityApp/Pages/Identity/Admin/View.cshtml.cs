@@ -32,7 +32,7 @@ namespace IdentityApp.Pages.Identity.Admin
 
             if (IdentityUser == null)
             {
-                return RedirectToPage("SelectUser", new { Label = "View User", Callback = "List" });
+                return RedirectToPage("SelectUser", new { Label = "View User", Callback = "View" });
             }
 
             return Page();
