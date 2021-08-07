@@ -18,7 +18,10 @@
     @if (showHeader)
     {
         <nav class="navbar navbar-dark bg-@theme">
-            <a class="navbar-brand text-white">IdentityApp</a>
+            <div>
+                <a class="navbar-brand text-white" asp-controller="Home">IdentityApp</a>
+                <a class="navbar-brand text-white" asp-controller="Pages">IdentityApp (Pages)</a>
+            </div>
             <div class="text-white"><partial name="_LoginPartial" /></div>
         </nav>
     }

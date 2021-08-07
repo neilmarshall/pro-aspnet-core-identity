@@ -24,7 +24,7 @@ namespace IdentityApp
             services.AddControllersWithViews();
             services.AddRazorPages();
 
-            services.AddIdentity<IdentityUser<int>, IdentityRole>(options =>
+            services.AddIdentity<IdentityUser<int>, IdentityRole<int>>(options =>
             {
                 options.Lockout = new LockoutOptions
                 {
@@ -33,7 +33,7 @@ namespace IdentityApp
             });
             services.AddTransient<IUserStore<IdentityUser<int>>>(_ =>
                 new IdentityUserRepository(Configuration.GetConnectionString("Default")));
-            services.AddTransient<IRoleStore<IdentityRole>>(_ =>
+            services.AddTransient<IRoleStore<IdentityRole<int>>>(_ =>
                 new IdentityRoleRepository(Configuration.GetConnectionString("Default")));
 
             services.Configure<SecurityStampValidatorOptions>(options =>
@@ -79,6 +79,8 @@ namespace IdentityApp
                 endpoints.MapDefaultControllerRoute();
                 endpoints.MapRazorPages();
             });
+
+            app.SeedUserStoreForDashboard();
         }
     }
 }

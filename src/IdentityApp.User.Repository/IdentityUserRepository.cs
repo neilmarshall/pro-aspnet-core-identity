@@ -1,14 +1,22 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Dapper;
 using Microsoft.AspNetCore.Identity;
+using Dapper;
 using Npgsql;
+using System.Security.Claims;
 
 namespace IdentityApp.User.Repository
 {
-    public class IdentityUserRepository : IUserStore<IdentityUser<int>>, IUserEmailStore<IdentityUser<int>>, IUserPasswordStore<IdentityUser<int>>, IUserPhoneNumberStore<IdentityUser<int>>, IQueryableUserStore<IdentityUser<int>>, IUserLockoutStore<IdentityUser<int>>, IUserSecurityStampStore<IdentityUser<int>>
+    public partial class IdentityUserRepository :
+        IQueryableUserStore<IdentityUser<int>>,
+        IUserEmailStore<IdentityUser<int>>,
+        IUserPasswordStore<IdentityUser<int>>,
+        IUserPhoneNumberStore<IdentityUser<int>>,
+        IUserSecurityStampStore<IdentityUser<int>>,
+        IUserStore<IdentityUser<int>>
     {
         private readonly string _connectionString;
 
@@ -43,25 +51,27 @@ namespace IdentityApp.User.Repository
                 using var conn = new NpgsqlConnection(_connectionString);
 
                 var id = await conn.QueryFirstAsync<int>(
-                    @"
-                        INSERT INTO identity.users (
-                            username, normalizedusername, email, normalizedemail, emailconfirmed, passwordhash, securitystamp, concurrencystamp, accessfailedcount
-                        ) VALUES (
-                            @username, @normalizedusername, @email, @normalizedemail, @emailconfirmed, @passwordhash, @securitystamp, @concurrencystamp, @accessfailedcount
-                        )
-                        RETURNING id;
-                    ",
+                    @"SELECT identity.create_user(
+                        @username,
+                        @normalizedusername,
+                        @email,
+                        @normalizedemail,
+                        @emailconfirmed,
+                        @passwordhash,
+                        @securitystamp,
+                        @concurrencystamp,
+                        @accessfailedcount);",
                     new
                     {
-                        UserName = user.UserName,
-                        NormalizedUserName = user.NormalizedUserName,
-                        Email = user.Email,
-                        NormalizedEmail = user.NormalizedEmail,
-                        EmailConfirmed = user.EmailConfirmed,
-                        PasswordHash = user.PasswordHash,
-                        SecurityStamp = user.SecurityStamp,
-                        ConcurrencyStamp = user.ConcurrencyStamp,
-                        AccessFailedCount = user.AccessFailedCount
+                        user.UserName,
+                        user.NormalizedUserName,
+                        user.Email,
+                        user.NormalizedEmail,
+                        user.EmailConfirmed,
+                        user.PasswordHash,
+                        user.SecurityStamp,
+                        user.ConcurrencyStamp,
+                        user.AccessFailedCount
                     });
 
                 user.Id = id;
@@ -79,9 +89,10 @@ namespace IdentityApp.User.Repository
             try
             {
                 using var conn = new NpgsqlConnection(_connectionString);
+
                 await conn.ExecuteAsync(
-                    "DELETE FROM identity.users WHERE id = @id;",
-                    new { id = user.Id });
+                    "SELECT identity.delete_user(@id);",
+                    new { user.Id });
 
                 return IdentityResult.Success;
             }
@@ -95,27 +106,38 @@ namespace IdentityApp.User.Repository
         {
         }
 
-        public Task<IdentityUser<int>> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
+        public async Task<IdentityUser<int>> FindByEmailAsync(string normalizedEmail, CancellationToken cancellationToken)
         {
-            throw new System.NotImplementedException();
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            var user = await conn.QueryFirstOrDefaultAsync<IdentityUser<int>>(
+                "SELECT * FROM identity.users WHERE normalizedEmail = @normalizedEmail;",
+                new { normalizedEmail });
+
+            return user;
         }
 
         public async Task<IdentityUser<int>> FindByIdAsync(string userId, CancellationToken cancellationToken)
         {
             var id = int.Parse(userId);
+
             using var conn = new NpgsqlConnection(_connectionString);
+
             var user = await conn.QueryFirstOrDefaultAsync<IdentityUser<int>>(
                 "SELECT * FROM identity.users WHERE id = @id;",
                 new { id });
+
             return user;
         }
 
         public async Task<IdentityUser<int>> FindByNameAsync(string normalizedUserName, CancellationToken cancellationToken)
         {
             using var conn = new NpgsqlConnection(_connectionString);
+
             var user = await conn.QueryFirstOrDefaultAsync<IdentityUser<int>>(
-                "SELECT * FROM identity.users WHERE normalizedUserName = @normalizedUserName;",
+                "SELECT * FROM identity.users WHERE normalizedusername = @normalizedusername;",
                 new { normalizedUserName });
+
             return user;
         }
 
@@ -132,16 +154,6 @@ namespace IdentityApp.User.Repository
         public Task<bool> GetEmailConfirmedAsync(IdentityUser<int> user, CancellationToken cancellationToken)
         {
             return Task.FromResult(user.EmailConfirmed);
-        }
-
-        public Task<bool> GetLockoutEnabledAsync(IdentityUser<int> user, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(user.LockoutEnabled);
-        }
-
-        public Task<DateTimeOffset?> GetLockoutEndDateAsync(IdentityUser<int> user, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(user.LockoutEnd);
         }
 
         public Task<string> GetNormalizedEmailAsync(IdentityUser<int> user, CancellationToken cancellationToken)
@@ -189,20 +201,16 @@ namespace IdentityApp.User.Repository
             return Task.FromResult(user.PasswordHash != null);
         }
 
-        public async Task<int> IncrementAccessFailedCountAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        public Task<int> IncrementAccessFailedCountAsync(IdentityUser<int> user, CancellationToken cancellationToken)
         {
             user.AccessFailedCount += 1;
-
-            await UpdateAsync(user, cancellationToken);
-
-            return user.AccessFailedCount;
+            return Task.FromResult(user.AccessFailedCount);
         }
 
-        public async Task ResetAccessFailedCountAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        public Task ResetAccessFailedCountAsync(IdentityUser<int> user, CancellationToken cancellationToken)
         {
             user.AccessFailedCount = 0;
-
-            await UpdateAsync(user, cancellationToken);
+            return Task.CompletedTask;
         }
 
         public Task SetEmailAsync(IdentityUser<int> user, string email, CancellationToken cancellationToken)
@@ -214,20 +222,6 @@ namespace IdentityApp.User.Repository
         public Task SetEmailConfirmedAsync(IdentityUser<int> user, bool confirmed, CancellationToken cancellationToken)
         {
             throw new System.NotImplementedException();
-        }
-
-        public async Task SetLockoutEnabledAsync(IdentityUser<int> user, bool enabled, CancellationToken cancellationToken)
-        {
-            user.LockoutEnabled = enabled;
-
-            await UpdateAsync(user, cancellationToken);
-        }
-
-        public async Task SetLockoutEndDateAsync(IdentityUser<int> user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken)
-        {
-            user.LockoutEnd = lockoutEnd;
-
-            await UpdateAsync(user, cancellationToken);
         }
 
         public Task SetNormalizedEmailAsync(IdentityUser<int> user, string normalizedEmail, CancellationToken cancellationToken)
@@ -258,11 +252,10 @@ namespace IdentityApp.User.Repository
             throw new NotImplementedException();
         }
 
-        public async Task SetSecurityStampAsync(IdentityUser<int> user, string stamp, CancellationToken cancellationToken)
+        public Task SetSecurityStampAsync(IdentityUser<int> user, string stamp, CancellationToken cancellationToken)
         {
             user.SecurityStamp = stamp;
-
-            await UpdateAsync(user, cancellationToken);
+            return Task.CompletedTask;
         }
 
         public Task SetUserNameAsync(IdentityUser<int> user, string userName, CancellationToken cancellationToken)
@@ -278,35 +271,33 @@ namespace IdentityApp.User.Repository
                 using var conn = new NpgsqlConnection(_connectionString);
 
                 await conn.ExecuteAsync(
-                    @"
-                        UPDATE identity.users
-                           SET username = @username,
-                               normalizedusername = @normalizedusername,
-                               email = @email,
-                               normalizedemail = @normalizedemail,
-                               emailconfirmed = @emailconfirmed,
-                               passwordhash = @passwordhash,
-                               securitystamp = @securitystamp,
-                               concurrencystamp = @concurrencystamp,
-                               accessfailedcount = @accessfailedcount,
-                               lockoutenabled = @lockoutenabled,
-                               lockoutend = @lockoutend
-                         WHERE id = @id;
-                    ",
+                    @"SELECT identity.update_user(
+                        @id,
+                        @username,
+                        @normalizedusername,
+                        @email,
+                        @normalizedemail,
+                        @emailconfirmed,
+                        @passwordhash,
+                        @securitystamp,
+                        @concurrencystamp,
+                        @accessfailedcount,
+                        @lockoutenabled,
+                        @lockoutend);",
                     new
                     {
-                        Id = user.Id,
-                        UserName = user.UserName,
-                        NormalizedUserName = user.NormalizedUserName,
-                        Email = user.Email,
-                        NormalizedEmail = user.NormalizedEmail,
-                        EmailConfirmed = user.EmailConfirmed,
-                        PasswordHash = user.PasswordHash,
-                        SecurityStamp = user.SecurityStamp,
-                        ConcurrencyStamp = user.ConcurrencyStamp,
-                        AccessFailedCount = user.AccessFailedCount,
-                        Lockoutenabled = user.LockoutEnabled,
-                        Lockoutend = user.LockoutEnd
+                        user.Id,
+                        user.UserName,
+                        user.NormalizedUserName,
+                        user.Email,
+                        user.NormalizedEmail,
+                        user.EmailConfirmed,
+                        user.PasswordHash,
+                        user.SecurityStamp,
+                        user.ConcurrencyStamp,
+                        user.AccessFailedCount,
+                        user.LockoutEnabled,
+                        user.LockoutEnd
                     });
 
                 return IdentityResult.Success;
@@ -315,6 +306,135 @@ namespace IdentityApp.User.Repository
             {
                 return IdentityResult.Failed();
             }
+        }
+    }
+
+    public partial class IdentityUserRepository : IUserLockoutStore<IdentityUser<int>>
+    {
+        public Task<bool> GetLockoutEnabledAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user.LockoutEnabled);
+        }
+
+        public Task<DateTimeOffset?> GetLockoutEndDateAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user.LockoutEnd);
+        }
+
+        public Task SetLockoutEnabledAsync(IdentityUser<int> user, bool enabled, CancellationToken cancellationToken)
+        {
+            user.LockoutEnabled = enabled;
+            return Task.CompletedTask;
+        }
+
+        public Task SetLockoutEndDateAsync(IdentityUser<int> user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken)
+        {
+            user.LockoutEnd = lockoutEnd;
+            return Task.CompletedTask;
+        }
+    }
+
+    public partial class IdentityUserRepository : IUserRoleStore<IdentityUser<int>>
+    {
+        public async Task AddToRoleAsync(IdentityUser<int> user, string roleName, CancellationToken cancellationToken)
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            await conn.ExecuteAsync(
+                "SELECT identity.add_user_role(@id, @rolename);",
+                new { user.Id, roleName });
+        }
+
+        public async Task<IList<string>> GetRolesAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            var roles = await conn.QueryAsync<string>(
+                "SELECT identity.get_user_roles(@id)",
+                new { user.Id });
+
+            return roles.ToList();
+        }
+
+        public async Task<IList<IdentityUser<int>>> GetUsersInRoleAsync(string roleName, CancellationToken cancellationToken)
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            var users = await conn.QueryAsync<IdentityUser<int>>(
+                "SELECT * FROM identity.get_users_in_role(@rolename);",
+                new { roleName });
+
+            return users.ToList();
+        }
+
+        public async Task<bool> IsInRoleAsync(IdentityUser<int> user, string roleName, CancellationToken cancellationToken)
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            return await conn.QueryFirstAsync<bool>(
+                "SELECT identity.user_is_in_role(@id, @rolename);",
+                new { user.Id, roleName });
+        }
+
+        public async Task RemoveFromRoleAsync(IdentityUser<int> user, string roleName, CancellationToken cancellationToken)
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            await conn.ExecuteAsync(
+                "SELECT identity.remove_user_role(@userid, @rolename);",
+                new { UserId = user.Id, roleName });
+        }
+    }
+
+    public partial class IdentityUserRepository : IUserClaimStore<IdentityUser<int>>
+    {
+        public async Task AddClaimsAsync(IdentityUser<int> user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            foreach (var claim in claims)
+            {
+                await conn.ExecuteAsync(
+                    "SELECT identity.add_claim(@id, @type, @value);",
+                    new { user.Id, claim.Type, claim.Value });
+            }
+        }
+
+        public async Task<IList<Claim>> GetClaimsAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            var claims = await conn.QueryAsync<(string type, string value)>(
+                "SELECT * FROM identity.get_claims(@id);",
+                new { user.Id });
+
+            return claims.Select(c => new Claim(c.type, c.value)).ToList();
+        }
+
+        public Task<IList<IdentityUser<int>>> GetUsersForClaimAsync(Claim claim, CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
+        }
+
+        public async Task RemoveClaimsAsync(IdentityUser<int> user, IEnumerable<Claim> claims, CancellationToken cancellationToken)
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            foreach (var claim in claims)
+            {
+                await conn.ExecuteAsync(
+                    "SELECT identity.delete_claim(@id, @type);",
+                    new { user.Id, claim.Type });
+            }
+        }
+
+        public async Task ReplaceClaimAsync(IdentityUser<int> user, Claim claim, Claim newClaim, CancellationToken cancellationToken)
+        {
+            using var conn = new NpgsqlConnection(_connectionString);
+
+            await conn.ExecuteAsync(
+                "SELECT identity.update_claim(@id, @type, @value);",
+                new { user.Id, claim.Type, newClaim.Value });
         }
     }
 }

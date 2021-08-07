@@ -2,7 +2,7 @@
 
 namespace IdentityApp.Pages.Identity.Admin
 {
-    [Authorize]
+    [Authorize(Roles = "Dashboard")]
     public class AdminPageModel : UserPageModel
     {
     }
