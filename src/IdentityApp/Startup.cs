@@ -24,9 +24,18 @@ namespace IdentityApp
             services.AddControllersWithViews();
             services.AddRazorPages();
 
-            services.AddDefaultIdentity<IdentityUser<int>>();
+            services.AddIdentity<IdentityUser<int>, IdentityRole>();
             services.AddTransient<IUserStore<IdentityUser<int>>>(_ =>
                 new IdentityUserRepository(Configuration.GetConnectionString("Default")));
+            services.AddTransient<IRoleStore<IdentityRole>>(_ =>
+                new IdentityRoleRepository(Configuration.GetConnectionString("Default")));
+
+            services.ConfigureApplicationCookie(options =>
+            {
+                options.LoginPath = "/Identity/SignIn";
+                options.LogoutPath = "/Identity/SignOut";
+                options.AccessDeniedPath = "/Identity/Forbidden";
+            });
 
             services.AddTransient<IProductRepository>(_ =>
                 new ProductRepository(Configuration.GetConnectionString("Default")));

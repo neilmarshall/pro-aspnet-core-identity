@@ -16,9 +16,9 @@ namespace IdentityApp.Pages.Identity.Admin
 
         private readonly string[] emails =
         {
-            "alice_app2@example.com",
-            "bob_app2@example.com",
-            "charlie_app2@example.com"
+            "alice_auto@example.com",
+            "bob_auto@example.com",
+            "charlie_auto@example.com"
         };
 
         public DashboardModel(UserManager<IdentityUser<int>> userManager)
@@ -35,7 +35,7 @@ namespace IdentityApp.Pages.Identity.Admin
         {
             foreach (var existingUser in UserManager.Users.ToList())
             {
-                if (existingUser.UserName.Contains("_app2"))
+                if (existingUser.UserName.Contains("_auto"))
                 {
                     var result = await UserManager.DeleteAsync(existingUser);
                     result.Process(ModelState);
@@ -52,7 +52,12 @@ namespace IdentityApp.Pages.Identity.Admin
                 };
 
                 var result = await UserManager.CreateAsync(user);
-                result.Process(ModelState);
+
+                if (result.Process(ModelState))
+                {
+                    result = await UserManager.AddPasswordAsync(user, "MySecret1$");
+                    result.Process(ModelState);
+                }
             }
 
             if (ModelState.IsValid)
