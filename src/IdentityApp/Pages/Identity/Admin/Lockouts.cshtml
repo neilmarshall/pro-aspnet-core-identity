@@ -1,0 +1,68 @@
+﻿@page
+@model IdentityApp.Pages.Identity.Admin.LockoutsModel
+@{
+    ViewBag.Workflow = "Lockouts";
+}
+
+<table class="table table-sm table-striped table-bordered">
+    <thead>
+        <tr><th class="text-center py-2" colspan="3">Locked Out Users</th></tr>
+    </thead>
+    <tbody>
+        @if (Model.LockedOutUsers.Count() == 0)
+        {
+            <tr><td>No locked out users</td></tr>
+        }
+        else
+        {
+            <tr>
+                <th>Email</th>
+                <th>Lockout remaining</th>
+            </tr>
+            @foreach (var user in Model.LockedOutUsers)
+            {
+                var timeLeft = await Model.TimeLeft(user);
+                <tr>
+                    <td>@user.Email</td>
+                    <td>@timeLeft.Days days, @timeLeft.Hours hours, @timeLeft.Minutes min, @timeLeft.Seconds secs</td>
+                    <td>
+                        <form method="post" asp-page-handler="unlock">
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <button class="btn btn-sm btn-success" type="submit">Unlock Now</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+<table class="table table-sm table-striped table-bordered">
+    <thead>
+        <tr><th class="text-center py-2" colspan="2">Other Users</th></tr>
+    </thead>
+    <tbody>
+        @if (Model.OtherUsers.Count() == 0)
+        {
+            <tr><th colspan="2" class="py-2 text-center">All users locked out</th></tr>
+        }
+        else
+        {
+            <tr>
+                <th>Email</th>
+            </tr>
+            @foreach (var user in Model.OtherUsers)
+            {
+                <tr>
+                    <td>@user.Email</td>
+                    <td>
+                        <form method="post" asp-page-handler="lock">
+                            <input type="hidden" name="id" value="@user.Id" />
+                            <button class="btn btn-sm btn-success" type="submit">Lock Out</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>

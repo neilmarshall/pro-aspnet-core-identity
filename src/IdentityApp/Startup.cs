@@ -24,11 +24,22 @@ namespace IdentityApp
             services.AddControllersWithViews();
             services.AddRazorPages();
 
-            services.AddIdentity<IdentityUser<int>, IdentityRole>();
+            services.AddIdentity<IdentityUser<int>, IdentityRole>(options =>
+            {
+                options.Lockout = new LockoutOptions
+                {
+                    MaxFailedAccessAttempts = 2
+                };
+            });
             services.AddTransient<IUserStore<IdentityUser<int>>>(_ =>
                 new IdentityUserRepository(Configuration.GetConnectionString("Default")));
             services.AddTransient<IRoleStore<IdentityRole>>(_ =>
                 new IdentityRoleRepository(Configuration.GetConnectionString("Default")));
+
+            services.Configure<SecurityStampValidatorOptions>(options =>
+            {
+                options.ValidationInterval = System.TimeSpan.FromMinutes(1);
+            });
 
             services.ConfigureApplicationCookie(options =>
             {

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
@@ -24,6 +25,10 @@ namespace IdentityApp.Pages.Identity.Admin
         public DashboardModel(UserManager<IdentityUser<int>> userManager)
         {
             UserManager = userManager;
+            UsersLockedOut = UserManager
+                .Users
+                .Where(user => user.LockoutEnabled && user.LockoutEnd.HasValue && user.LockoutEnd.Value > DateTimeOffset.Now)
+                .Count();
         }
 
         public void OnGet()

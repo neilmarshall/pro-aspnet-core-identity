@@ -8,7 +8,7 @@ using Npgsql;
 
 namespace IdentityApp.User.Repository
 {
-    public class IdentityUserRepository : IUserStore<IdentityUser<int>>, IUserEmailStore<IdentityUser<int>>, IUserPasswordStore<IdentityUser<int>>, IUserPhoneNumberStore<IdentityUser<int>>, IQueryableUserStore<IdentityUser<int>>
+    public class IdentityUserRepository : IUserStore<IdentityUser<int>>, IUserEmailStore<IdentityUser<int>>, IUserPasswordStore<IdentityUser<int>>, IUserPhoneNumberStore<IdentityUser<int>>, IQueryableUserStore<IdentityUser<int>>, IUserLockoutStore<IdentityUser<int>>, IUserSecurityStampStore<IdentityUser<int>>
     {
         private readonly string _connectionString;
 
@@ -25,21 +25,7 @@ namespace IdentityApp.User.Repository
                 {
                     using var conn = new NpgsqlConnection(_connectionString);
 
-                    var users = conn.Query<IdentityUser<int>>(
-                        @"
-                        SELECT
-                            id,
-                            username,
-                            normalizedusername,
-                            email,
-                            normalizedemail,
-                            emailconfirmed,
-                            passwordhash,
-                            securitystamp,
-                            concurrencystamp,
-                            accessfailedcount
-                        FROM identity.users;
-                    ");
+                    var users = conn.Query<IdentityUser<int>>(@"SELECT * FROM identity.users;");
 
                     return users.AsQueryable();
                 }
@@ -133,6 +119,11 @@ namespace IdentityApp.User.Repository
             return user;
         }
 
+        public Task<int> GetAccessFailedCountAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user.AccessFailedCount);
+        }
+
         public Task<string> GetEmailAsync(IdentityUser<int> user, CancellationToken cancellationToken)
         {
             return Task.FromResult(user.Email);
@@ -141,6 +132,16 @@ namespace IdentityApp.User.Repository
         public Task<bool> GetEmailConfirmedAsync(IdentityUser<int> user, CancellationToken cancellationToken)
         {
             return Task.FromResult(user.EmailConfirmed);
+        }
+
+        public Task<bool> GetLockoutEnabledAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user.LockoutEnabled);
+        }
+
+        public Task<DateTimeOffset?> GetLockoutEndDateAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user.LockoutEnd);
         }
 
         public Task<string> GetNormalizedEmailAsync(IdentityUser<int> user, CancellationToken cancellationToken)
@@ -168,6 +169,11 @@ namespace IdentityApp.User.Repository
             throw new NotImplementedException();
         }
 
+        public Task<string> GetSecurityStampAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(user.SecurityStamp);
+        }
+
         public Task<string> GetUserIdAsync(IdentityUser<int> user, CancellationToken cancellationToken)
         {
             return Task.FromResult(user.Id.ToString());
@@ -183,6 +189,22 @@ namespace IdentityApp.User.Repository
             return Task.FromResult(user.PasswordHash != null);
         }
 
+        public async Task<int> IncrementAccessFailedCountAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            user.AccessFailedCount += 1;
+
+            await UpdateAsync(user, cancellationToken);
+
+            return user.AccessFailedCount;
+        }
+
+        public async Task ResetAccessFailedCountAsync(IdentityUser<int> user, CancellationToken cancellationToken)
+        {
+            user.AccessFailedCount = 0;
+
+            await UpdateAsync(user, cancellationToken);
+        }
+
         public Task SetEmailAsync(IdentityUser<int> user, string email, CancellationToken cancellationToken)
         {
             user.Email = email;
@@ -192,6 +214,20 @@ namespace IdentityApp.User.Repository
         public Task SetEmailConfirmedAsync(IdentityUser<int> user, bool confirmed, CancellationToken cancellationToken)
         {
             throw new System.NotImplementedException();
+        }
+
+        public async Task SetLockoutEnabledAsync(IdentityUser<int> user, bool enabled, CancellationToken cancellationToken)
+        {
+            user.LockoutEnabled = enabled;
+
+            await UpdateAsync(user, cancellationToken);
+        }
+
+        public async Task SetLockoutEndDateAsync(IdentityUser<int> user, DateTimeOffset? lockoutEnd, CancellationToken cancellationToken)
+        {
+            user.LockoutEnd = lockoutEnd;
+
+            await UpdateAsync(user, cancellationToken);
         }
 
         public Task SetNormalizedEmailAsync(IdentityUser<int> user, string normalizedEmail, CancellationToken cancellationToken)
@@ -222,6 +258,13 @@ namespace IdentityApp.User.Repository
             throw new NotImplementedException();
         }
 
+        public async Task SetSecurityStampAsync(IdentityUser<int> user, string stamp, CancellationToken cancellationToken)
+        {
+            user.SecurityStamp = stamp;
+
+            await UpdateAsync(user, cancellationToken);
+        }
+
         public Task SetUserNameAsync(IdentityUser<int> user, string userName, CancellationToken cancellationToken)
         {
             user.UserName = userName;
@@ -245,7 +288,9 @@ namespace IdentityApp.User.Repository
                                passwordhash = @passwordhash,
                                securitystamp = @securitystamp,
                                concurrencystamp = @concurrencystamp,
-                               accessfailedcount = @accessfailedcount
+                               accessfailedcount = @accessfailedcount,
+                               lockoutenabled = @lockoutenabled,
+                               lockoutend = @lockoutend
                          WHERE id = @id;
                     ",
                     new
@@ -259,7 +304,9 @@ namespace IdentityApp.User.Repository
                         PasswordHash = user.PasswordHash,
                         SecurityStamp = user.SecurityStamp,
                         ConcurrencyStamp = user.ConcurrencyStamp,
-                        AccessFailedCount = user.AccessFailedCount
+                        AccessFailedCount = user.AccessFailedCount,
+                        Lockoutenabled = user.LockoutEnabled,
+                        Lockoutend = user.LockoutEnd
                     });
 
                 return IdentityResult.Success;
