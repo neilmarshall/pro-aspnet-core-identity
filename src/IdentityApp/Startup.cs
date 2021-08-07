@@ -1,10 +1,13 @@
+using System.Text;
 using IdentityApp.User.Repository;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.IdentityModel.Tokens;
 using Product.Repository;
 
 namespace IdentityApp
@@ -31,10 +34,15 @@ namespace IdentityApp
                     MaxFailedAccessAttempts = 2
                 };
             });
-            services.AddTransient<IUserStore<IdentityUser<int>>>(_ =>
-                new IdentityUserRepository(Configuration.GetConnectionString("Default")));
-            services.AddTransient<IRoleStore<IdentityRole<int>>>(_ =>
-                new IdentityRoleRepository(Configuration.GetConnectionString("Default")));
+
+            services.AddAuthentication().AddJwtBearer(
+                JwtBearerDefaults.AuthenticationScheme,
+                opts =>
+                {
+                    opts.TokenValidationParameters.ValidateAudience = false;
+                    opts.TokenValidationParameters.ValidateIssuer = false;
+                    opts.TokenValidationParameters.IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Configuration["BearerTokens:Key"]));
+                });
 
             services.Configure<SecurityStampValidatorOptions>(options =>
             {
@@ -46,8 +54,22 @@ namespace IdentityApp
                 options.LoginPath = "/Identity/SignIn";
                 options.LogoutPath = "/Identity/SignOut";
                 options.AccessDeniedPath = "/Identity/Forbidden";
+                options.Events.DisableRedirectionForApiClients();
             });
 
+            services.AddCors(opts =>
+            {
+                opts.AddDefaultPolicy(builder => builder
+                    .WithOrigins("http://localhost:5100")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod()
+                    .AllowCredentials());
+            });
+
+            services.AddTransient<IUserStore<IdentityUser<int>>>(_ =>
+                new IdentityUserRepository(Configuration.GetConnectionString("Default")));
+            services.AddTransient<IRoleStore<IdentityRole<int>>>(_ =>
+                new IdentityRoleRepository(Configuration.GetConnectionString("Default")));
             services.AddTransient<IProductRepository>(_ =>
                 new ProductRepository(Configuration.GetConnectionString("Default")));
         }
@@ -70,7 +92,7 @@ namespace IdentityApp
             app.UseStaticFiles();
 
             app.UseRouting();
-
+            app.UseCors();
             app.UseAuthentication();
             app.UseAuthorization();
 

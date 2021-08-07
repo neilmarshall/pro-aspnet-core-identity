@@ -37,9 +37,11 @@
     <PackageReference Include="Microsoft.Extensions.Identity.Core" Version="5.0.6" />
     <PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="5.0.6" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="5.0.2" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="5.0.10" />
   </ItemGroup>
   <ItemGroup>
     <None Remove="Pages\Identity\" />
     <None Remove="Pages\Identity\Admin\" />
+    <None Remove="Microsoft.AspNetCore.Authentication.JwtBearer" />
   </ItemGroup>
 </Project>
