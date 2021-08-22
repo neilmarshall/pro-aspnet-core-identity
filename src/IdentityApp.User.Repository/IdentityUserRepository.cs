@@ -23,6 +23,13 @@ namespace IdentityApp.User.Repository
         public IdentityUserRepository(string connectionString)
         {
             _connectionString = connectionString;
+
+            MapNpgsqlTypes();
+        }
+
+        private void MapNpgsqlTypes()
+        {
+            NpgsqlConnection.GlobalTypeMapper.MapComposite<Claim>("identity.claim");
         }
 
         public IQueryable<IdentityUser<int>> Users
@@ -392,12 +399,14 @@ namespace IdentityApp.User.Repository
         {
             using var conn = new NpgsqlConnection(_connectionString);
 
-            foreach (var claim in claims)
-            {
-                await conn.ExecuteAsync(
-                    "SELECT identity.add_claim(@id, @type, @value);",
-                    new { user.Id, claim.Type, claim.Value });
-            }
+            await conn.OpenAsync(cancellationToken);
+
+            using var cmd = new NpgsqlCommand("SELECT identity.add_claim(@id, @claims);", conn);
+
+            cmd.Parameters.Add(new NpgsqlParameter { ParameterName = "id", Value = user.Id });
+            cmd.Parameters.Add(new NpgsqlParameter { ParameterName = "claims", Value = claims.ToArray() });
+
+            await cmd.ExecuteNonQueryAsync(cancellationToken);
         }
 
         public async Task<IList<Claim>> GetClaimsAsync(IdentityUser<int> user, CancellationToken cancellationToken)

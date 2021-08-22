@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityApp.User.Repository
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityApp.Database", "IdentityApp.Database\IdentityApp.Database.csproj", "{251CB432-64DB-4160-A180-52832BEE59A0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "IdentityApp.Database.Fixtures", "Tests\IdentityApp.Database.Fixtures\IdentityApp.Database.Fixtures.csproj", "{A86AF501-BA40-4081-8A53-4F863039869F}"
+EndProject
 Global
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -102,8 +104,21 @@ Global
 		{251CB432-64DB-4160-A180-52832BEE59A0}.Release|x64.Build.0 = Release|Any CPU
 		{251CB432-64DB-4160-A180-52832BEE59A0}.Release|x86.ActiveCfg = Release|Any CPU
 		{251CB432-64DB-4160-A180-52832BEE59A0}.Release|x86.Build.0 = Release|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Debug|x64.Build.0 = Debug|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Debug|x86.Build.0 = Debug|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Release|x64.ActiveCfg = Release|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Release|x64.Build.0 = Release|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Release|x86.ActiveCfg = Release|Any CPU
+		{A86AF501-BA40-4081-8A53-4F863039869F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{6EB558B7-5E40-4192-BD07-4166128EDB16} = {4DFA44D2-61DE-4BED-9BA9-B45C47DD5E94}
+		{A86AF501-BA40-4081-8A53-4F863039869F} = {4DFA44D2-61DE-4BED-9BA9-B45C47DD5E94}
 	EndGlobalSection
 EndGlobal
